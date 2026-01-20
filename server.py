@@ -34,10 +34,22 @@ def init_db():
     conn.commit()
     conn.close()
 
+def do_GET(self):
+    parsed_path = urlparse(self.path)
+    path = parsed_path.path
+    query = parse_qs(parsed_path.query)
 
+    if path == "/api/health":
+        self._send_json({
+            "status": "ok",
+            "time": datetime.now().isoformat()
+        })
+        return
 # === HTTP Server ===
 class WalletHandler(BaseHTTPRequestHandler):
 
+    
+    
     def _set_headers(self, code=200, content_type="application/json"):
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -208,6 +220,7 @@ class WalletHandler(BaseHTTPRequestHandler):
 # === Start ===
 if __name__ == "__main__":
     init_db()
+    do_GET()
     import os
 
     PORT = int(os.environ.get("PORT", 8000))
