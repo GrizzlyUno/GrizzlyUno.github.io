@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>User Interface</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; padding:20px; background:#f5f7fa }
+    .card { background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06); margin-bottom:16px; }
+    input, select, button { width:100%; padding:8px; margin-top:8px; border-radius:6px; border:1px solid #ccc; font-size:15px; box-sizing:border-box; }
+    button { background:#0078ff; color:#fff; border:none; cursor:pointer; }
+    .muted { color:#666; font-size:13px; }
+    .tx { padding:8px 0; border-bottom:1px solid #eee; }
+    .tx:last-child { border-bottom:none; }
+    .tx-in { color:#1b7a35; }
+    .tx-out { color:#b33; }
+    label { font-weight:600; margin-top:6px; display:block; }
+  </style>
+</head>
+<body>
+  <h1>Demo Wallet — User</h1>
+
+  <!-- CREATE CARD (visible wenn kein Wallet existiert) -->
+  <div id="createCard" class="card" style="display:block;">
+    <p>Erstelle zuerst dein Wallet (einmalig, Name wird lokal gespeichert):</p>
+    <label for="createName">Wallet-Name</label>
+    <input id="createName" placeholder="z. B. Alice">
+    <button id="createBtn">Wallet erstellen</button>
+    <p class="muted">Jedes neue Wallet bekommt 100 Credits Startguthaben.</p>
+    <div id="createMsg" class="muted"></div>
+  </div>
+
+  <!-- WALLET / BALANCE (sichtbar nach Erstellung) -->
+  <div id="walletCard" class="card" style="display:none;">
+    <p><strong>Dein Wallet:</strong></p>
+    <p>Name: <span id="myName"></span></p>
+    <p>Kontostand: <span id="myBalance"></span> Credits</p>
+    <button id="refreshBtn">Aktualisieren</button>
+    <button id="logoutBtn" style="background:#777; margin-top:8px;">Abmelden (Wallet löschen)</button>
+  </div>
+
+  <!-- SEND CARD -->
+  <div id="sendCard" class="card" style="display:none;">
+    <h3>Credits senden</h3>
+    <label for="toSelect">An (Empfänger)</label>
+    <select id="toSelect"></select>
+    <label for="amountInput">Betrag</label>
+    <input id="amountInput" type="number" step="0.01" min="0.01" placeholder="z. B. 10">
+    <button id="sendBtn">Senden</button>
+    <div id="sendMsg" class="muted"></div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div id="txCard" class="card" style="display:none;">
+    <h3>Transaktionshistorie</h3>
+    <div id="txList" class="muted">lade...</div>
+  </div>
+
+<script>
+const API = location.origin + "/api";
+let myWallet = localStorage.getItem("walletName") || null;
+
+// --- Helfer ---
+function show(el, yes){ el.style.display = yes ? "block" : "none"; }
+function setMsg(id, txt){ document.getElementById(id).textContent = txt || ""; }
+
+// --- UI initial ---
+if (myWallet) {
+  // falls bereits gespeichert: direkt Details anzeigen
+  show(document.getElementById('createCard'), false);
+  show(document.getElementById('walletCard'), true);
+  show(document.getElementById('sendCard'), true);
+  show(document.getElementById('txCard'), true);
+  loadWalletAndUI();
+} else {
+  // kein wallet: zeige create
+  show(document.getElementById('createCard'), true);
+  show(document.getElementById('walletCard'), false);
+  show(document.getElementById('sendCard'), false);
+  show(document.getElementById('txCard'), false);
+}
+
+// --- Create Wallet ---
+document.getElementById('createBtn').addEventListener('click', async () => {
+  const name = document.getElementById('createName').value.trim();
+  if (!name) { setMsg('createMsg','Bitte Namen eingeben'); return; }
+  setMsg('createMsg','erstelle Wallet…');
+  try {
+    const res = await fetch(API + "/wallet", {
+      method: "POST",
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name})
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setMsg('createMsg', data.error || 'Fehler');
+      return;
+    }
+    // Erfolg: speichern & UI wechseln
+    localStorage.setItem('walletName', name);
+    myWallet = name;
+    setMsg('createMsg','Wallet erstellt ✔');
+    // UI: hide create, show rest
+    show(document.getElementById('createCard'), false);
+    show(document.getElementById('walletCard'), true);
+    show(document.getElementById('sendCard'), true);
+    show(document.getElementById('txCard'), true);
+    loadWalletAndUI();
+  } catch (e) {
+    setMsg('createMsg','Fehler (Server nicht erreichbar)');
+  }
+});
+
+// --- Logout (löschen localStorage) ---
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  if (!confirm('Abmelden & gespeichertes Wallet löschen?')) return;
+  localStorage.removeItem('walletName');
+  myWallet = null;
+  // Seite neu laden, damit Flow wieder von vorne startet
+  location.reload();
+});
+
+// --- Refresh button ---
+document.getElementById('refreshBtn').addEventListener('click', loadWalletAndUI);
+
+// --- Send ---
+document.getElementById('sendBtn').addEventListener('click', async () => {
+  setMsg('sendMsg','');
+  const to = document.getElementById('toSelect').value;
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  if (!to) { setMsg('sendMsg','Bitte Empfänger wählen'); return; }
+  if (!amount || amount <= 0) { setMsg('sendMsg','Bitte gültigen Betrag'); return; }
+
+  try {
+    const res = await fetch(API + "/transaction", {
+      method: "POST",
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ from: myWallet, to, amount })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setMsg('sendMsg', data.error || 'Transaktion fehlgeschlagen');
+      return;
+    }
+    setMsg('sendMsg','Transaktion erfolgreich ✔');
+    // update UI
+    document.getElementById('amountInput').value = '';
+    loadWalletAndUI();
+  } catch (e) {
+    setMsg('sendMsg','Fehler (Server nicht erreichbar)');
+  }
+});
+
+// --- Lade Wallet-Liste, fülle Empfängerliste, zeige Balance & Transaktionen ---
+async function loadWalletAndUI(){
+  if (!myWallet) return;
+  try {
+    const res = await fetch(API + "/wallets");
+    const wallets = await res.json();
+    // balance anzeigen
+    const me = wallets.find(w => w.name === myWallet);
+    if (!me) {
+      alert('Dein Wallet wurde nicht gefunden. Bitte neu erstellen.');
+      localStorage.removeItem('walletName');
+      location.reload();
+      return;
+    }
+    document.getElementById('myName').textContent = me.name;
+    document.getElementById('myBalance').textContent = Number(me.balance).toFixed(2);
+
+    // Empfängerliste
+    const sel = document.getElementById('toSelect');
+    sel.innerHTML = '';
+    wallets.filter(w => w.name !== myWallet).forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w.name;
+      opt.textContent = `${w.name} — ${Number(w.balance).toFixed(2)} Credits`;
+      sel.appendChild(opt);
+    });
+    if (sel.options.length === 0) {
+      const opt = document.createElement('option'); opt.value=''; opt.textContent='(keine Empfänger vorhanden)'; sel.appendChild(opt);
+    }
+
+    // Transaktionen laden
+    await loadTransactions();
+  } catch (e) {
+    console.error(e);
+    alert('Fehler beim Laden. Ist der Server gestartet?');
+  }
+}
+
+// --- Lade Transaktionen nur für dieses Wallet ---
+async function loadTransactions() {
+  if (!myWallet) return;
+  const txList = document.getElementById('txList');
+  txList.innerHTML = 'lade…';
+  try {
+    const res = await fetch(API + `/transactions?wallet=${encodeURIComponent(myWallet)}`);
+    const txs = await res.json();
+    if (!Array.isArray(txs) || txs.length === 0) {
+      txList.innerHTML = '<div class="muted">Keine Transaktionen vorhanden.</div>';
+      return;
+    }
+    txList.innerHTML = '';
+    txs.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'tx ' + (t.from === myWallet ? 'tx-out' : 'tx-in');
+      if (t.from === myWallet) {
+        div.innerHTML = `→ An: <strong>${t.to}</strong> &nbsp; | &nbsp; Betrag: ${Number(t.amount).toFixed(2)} &nbsp; | &nbsp; ${new Date(t.timestamp).toLocaleString()}`;
+      } else {
+        div.innerHTML = `← Von: <strong>${t.from}</strong> &nbsp; | &nbsp; Betrag: ${Number(t.amount).toFixed(2)} &nbsp; | &nbsp; ${new Date(t.timestamp).toLocaleString()}`;
+      }
+      txList.appendChild(div);
+    });
+  } catch (e) {
+    txList.innerHTML = '<div class="muted">Fehler beim Laden der Transaktionen</div>';
+  }
+}
+</script>
+</body>
+</html>

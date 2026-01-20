@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Admin Interface</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f3f3f3;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-top: 0;
+    }
+    #container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      flex: 1 1 45%;
+      min-width: 300px;
+    }
+    .wallet, .tx {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .wallet strong, .tx strong {
+      display: inline-block;
+      width: 120px;
+    }
+    #qr {
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin-Interface</h1>
+
+  <div id="qr"></div>
+
+  <div id="container">
+    <div class="section">
+      <h2>Wallets</h2>
+      <div id="wallets"></div>
+    </div>
+    <div class="section">
+      <h2>Transaktionen</h2>
+      <div id="transactions"></div>
+    </div>
+  </div>
+
+  <script src="qrious.min.js"></script>
+  <script>
+    const API = location.origin + "/api";
+
+    // QR-Code erstellen
+    const userURL = location.origin + "/user.html";
+    const qr = new QRious({
+      element: document.createElement("canvas"),
+      value: userURL,
+      size: 160
+    });
+    const qrDiv = document.getElementById("qr");
+    qrDiv.innerHTML = `<p>📱 User Interface QR-Code:</p>`;
+    qrDiv.appendChild(qr.element);
+    qrDiv.innerHTML += `<p><a href="${userURL}" target="_blank">${userURL}</a></p>`;
+
+    // Wallets laden
+    function loadWallets() {
+      fetch(API + "/wallets")
+      .then(r => r.json())
+      .then(wallets => {
+        const wdiv = document.getElementById("wallets");
+        wdiv.innerHTML = "";
+        wallets.forEach(w => {
+          const div = document.createElement("div");
+          div.className = "wallet";
+          div.innerHTML = `
+            <strong>Name:</strong> ${w.name}<br>
+            <strong>Kontostand:</strong> ${w.balance.toFixed(2)} Credits<br>
+            <strong>Erstellt:</strong> ${new Date(w.created_at).toLocaleString()}
+          `;
+          wdiv.appendChild(div);
+        });
+      });
+    }
+
+    // Transaktionen laden
+    function loadTransactions() {
+      fetch(API + "/transactions")
+      .then(r => r.json())
+      .then(txs => {
+        const tdiv = document.getElementById("transactions");
+        tdiv.innerHTML = "";
+        txs.forEach(t => {
+          const div = document.createElement("div");
+          div.className = "tx";
+          div.innerHTML = `
+            <strong>Von:</strong> ${t.from || "-"}<br>
+            <strong>An:</strong> ${t.to || "-"}<br>
+            <strong>Betrag:</strong> ${t.amount.toFixed(2)} Credits<br>
+            <strong>Zeit:</strong> ${new Date(t.timestamp).toLocaleString()}
+          `;
+          tdiv.appendChild(div);
+        });
+      });
+    }
+
+    // Live aktualisieren
+    loadWallets();
+    loadTransactions();
+    setInterval(() => {
+      loadWallets();
+      loadTransactions();
+    }, 2000);
+  </script>
+</body>
+</html>
