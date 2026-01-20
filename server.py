@@ -34,17 +34,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-def do_GET(self):
-    parsed_path = urlparse(self.path)
-    path = parsed_path.path
-    query = parse_qs(parsed_path.query)
 
-    if path == "/api/health":
-        self._send_json({
-            "status": "ok",
-            "time": datetime.now().isoformat()
-        })
-        return
 # === HTTP Server ===
 class WalletHandler(BaseHTTPRequestHandler):
 
@@ -66,6 +56,18 @@ class WalletHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         return json.loads(body) if body else {}
+
+    def do_GET(self):
+    parsed_path = urlparse(self.path)
+    path = parsed_path.path
+    query = parse_qs(parsed_path.query)
+
+    if path == "/api/health":
+        self._send_json({
+            "status": "ok",
+            "time": datetime.now().isoformat()
+        })
+        return
 
     def do_OPTIONS(self):
         self._set_headers()
