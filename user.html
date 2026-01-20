@@ -83,9 +83,14 @@ if (myWallet) {
 // --- Create Wallet ---
 const API = "https://grizzlyunogithubio-production.up.railway.app/api";
 
+const API = "https://grizzlyunogithubio-production.up.railway.app/api";
+
 document.getElementById('createBtn').addEventListener('click', async () => {
   const name = document.getElementById('createName').value.trim();
-  if (!name) { setMsg('createMsg','Bitte Namen eingeben'); return; }
+  if (!name) {
+    setMsg('createMsg','Bitte Namen eingeben');
+    return;
+  }
 
   setMsg('createMsg','erstelle Wallet…');
 
@@ -103,22 +108,27 @@ document.getElementById('createBtn').addEventListener('click', async () => {
       return;
     }
 
+    // SUCCESS
     localStorage.setItem('walletName', name);
     myWallet = name;
 
     setMsg('createMsg','Wallet erstellt ✔');
-    show(document.getElementById('createCard'), false);
-    show(document.getElementById('walletCard'), true);
-    show(document.getElementById('sendCard'), true);
-    show(document.getElementById('txCard'), true);
 
-    loadWalletAndUI();
+    // Delay UI switch so message is visible
+    setTimeout(() => {
+      show(document.getElementById('createCard'), false);
+      show(document.getElementById('walletCard'), true);
+      show(document.getElementById('sendCard'), true);
+      show(document.getElementById('txCard'), true);
+      loadWalletAndUI();
+    }, 500);
 
   } catch (e) {
     console.error(e);
-    setMsg('createMsg','Fehler (Server nicht erreichbar)');
+    setMsg('createMsg','Server nicht erreichbar');
   }
 });
+
 
 
 // --- Logout (löschen localStorage) ---
