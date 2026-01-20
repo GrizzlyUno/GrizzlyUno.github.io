@@ -58,7 +58,7 @@
 
 <script>
 let myWallet = localStorage.getItem("walletName") || null;
-
+const API = "https://grizzlyunogithubio-production.up.railway.app/api";
 // --- Helfer ---
 function show(el, yes){ el.style.display = yes ? "block" : "none"; }
 function setMsg(id, txt){ document.getElementById(id).textContent = txt || ""; }
@@ -80,7 +80,7 @@ if (myWallet) {
 }
 
 // --- Create Wallet ---
-const API = "https://grizzlyunogithubio-production.up.railway.app/api";
+
 
 document.getElementById('createBtn').addEventListener('click', async () => {
   const name = document.getElementById('createName').value.trim();
