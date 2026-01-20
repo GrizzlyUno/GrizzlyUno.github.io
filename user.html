@@ -86,7 +86,7 @@ document.getElementById('createBtn').addEventListener('click', async () => {
   if (!name) { setMsg('createMsg','Bitte Namen eingeben'); return; }
   setMsg('createMsg','erstelle Wallet…');
   try {
-    const res = await fetch(API + "/wallet", {
+    const res = await fetch("grizzlyunogithubio-production.up.railway.app", {
       method: "POST",
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({name})
