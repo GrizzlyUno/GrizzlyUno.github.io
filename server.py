@@ -208,10 +208,13 @@ class WalletHandler(BaseHTTPRequestHandler):
 # === Start ===
 if __name__ == "__main__":
     init_db()
-    PORT = int(os.environ.get("PORT", 8080))
+    import os
+
+    PORT = int(os.environ.get("PORT", 8000))
     server = HTTPServer(("0.0.0.0", PORT), WalletHandler)
+
     print("\n=== Demo Bitcoin Wallet Server ===")
-    print(" - Lokal:    http://localhost:8080")
+    print(" - Lokal:    http://localhost:8000")
     # print(f" - Netzwerk: http://{os.popen('ipconfig getifaddr en0').read().strip()}:8000")
     print("==================================\n")
     try:
