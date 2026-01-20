@@ -65,14 +65,13 @@
 
     // QR-Code erstellen
     const userURL = location.origin + "/user.html";
-    const qr = new QRious({
-      element: document.createElement("canvas"),
-      value: userURL,
-      size: 160
-    });
+    const img = document.createElement("img");
+    img.src = "frame.png";      // or a generated QR data URL
+    img.width = 160;
+    img.height = 160;
     const qrDiv = document.getElementById("qr");
     qrDiv.innerHTML = `<p>📱 User Interface QR-Code:</p>`;
-    qrDiv.appendChild(qr.element);
+    qrDiv.appendChild(img);
     qrDiv.innerHTML += `<p><a href="${userURL}" target="_blank">${userURL}</a></p>`;
 
     // Wallets laden
