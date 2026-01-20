@@ -58,16 +58,16 @@ class WalletHandler(BaseHTTPRequestHandler):
         return json.loads(body) if body else {}
 
     def do_GET(self):
-    parsed_path = urlparse(self.path)
-    path = parsed_path.path
-    query = parse_qs(parsed_path.query)
-
-    if path == "/api/health":
-        self._send_json({
-            "status": "ok",
-            "time": datetime.now().isoformat()
-        })
-        return
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        query = parse_qs(parsed_path.query)
+        
+        if path == "/api/health":
+            self._send_json({
+                "status": "ok",
+                "time": datetime.now().isoformat()
+            })
+            return
 
     def do_OPTIONS(self):
         self._set_headers()
