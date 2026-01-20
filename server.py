@@ -220,7 +220,6 @@ class WalletHandler(BaseHTTPRequestHandler):
 # === Start ===
 if __name__ == "__main__":
     init_db()
-    do_GET()
     import os
 
     PORT = int(os.environ.get("PORT", 8000))
